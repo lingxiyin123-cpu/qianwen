@@ -127,45 +127,6 @@
             text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
         }
         
-        .statistics {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #d4c8b0;
-        }
-        
-        .statistics h3 {
-            color: #8b4513;
-            margin-bottom: 15px;
-            font-size: 1.2rem;
-        }
-        
-        .stats-container {
-            display: flex;
-            justify-content: center;
-            gap: 40px;
-            flex-wrap: wrap;
-        }
-        
-        .stat-item {
-            text-align: center;
-            padding: 10px 20px;
-            background-color: #f5f1e6;
-            border-radius: 8px;
-            border: 1px solid #d4c8b0;
-        }
-        
-        .stat-label {
-            font-size: 1rem;
-            color: #333;
-            margin-right: 5px;
-        }
-        
-        .stat-value {
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: #8b4513;
-        }
-        
         @media (max-width: 480px) {
             .container {
                 padding: 20px;
@@ -199,25 +160,6 @@
             <button id="interpret-btn" class="btn" disabled>解签</button>
         </div>
         <div id="interpretation" class="interpretation"></div>
-        
-        <!-- 统计信息区域 -->
-        <div class="statistics">
-            <hr style="margin: 20px 0; border: 1px solid #d4c8b0;">
-            <h3>使用统计</h3>
-            <div class="stats-container">
-                <div class="stat-item">
-                    <span class="stat-label">总使用次数：</span>
-                    <span id="totalUses" class="stat-value">0</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">总使用人数：</span>
-                    <span id="uniqueUsers" class="stat-value">0</span>
-                </div>
-            </div>
-            <div class="statistics-note" style="font-size: 0.9rem; color: #666; margin-top: 10px;">
-                <small>注：统计数据记录所有设备的使用情况，显示全局总使用次数和总用户数。</small>
-            </div>
-        </div>
     </div>
     
     <script>
@@ -226,131 +168,10 @@
         const interpretBtn = document.getElementById('interpret-btn');
         const signResult = document.getElementById('sign-result');
         const interpretation = document.getElementById('interpretation');
-        const totalUses = document.getElementById('totalUses');
-        const uniqueUsers = document.getElementById('uniqueUsers');
         
         // 当前摇出的签号
         let currentSignNumber = null;
         let currentSignData = null;
-        
-        // 统计数据
-        let stats = {
-            totalUses: 0,
-            totalUsers: 0
-        };
-        
-        // 生成简单的浏览器指纹
-        function generateBrowserFingerprint() {
-            const fingerprint = [
-                navigator.userAgent,
-                navigator.language,
-                navigator.platform,
-                screen.width + 'x' + screen.height,
-                new Date().getTimezoneOffset(),
-                navigator.cookieEnabled
-            ].join('|');
-            
-            // 简单的哈希函数
-            let hash = 0;
-            for (let i = 0; i < fingerprint.length; i++) {
-                const char = fingerprint.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash; // Convert to 32bit integer
-            }
-            return Math.abs(hash).toString(16);
-        }
-
-        // 获取或生成用户ID
-        let userId = localStorage.getItem('shakeSignUserId');
-        if (!userId) {
-            // 生成更唯一的用户ID：时间戳 + 浏览器指纹 + 随机数
-            const fingerprint = generateBrowserFingerprint();
-            userId = 'user_' + Date.now() + '_' + fingerprint + '_' + Math.floor(Math.random() * 1000);
-            localStorage.setItem('shakeSignUserId', userId);
-        }
-        
-        // 从后端API加载统计数据 - 增加重试机制
-        async function loadStats(attempt = 0, maxAttempts = 3) {
-            try {
-                const response = await fetch('http://localhost:3000/api/get-stats');
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success) {
-                        stats.totalUses = data.data.totalUses || 0;
-                        stats.totalUsers = data.data.totalUsers || 0;
-                        console.log('成功加载统计数据:', stats);
-                    }
-                } else {
-                    throw new Error('API请求失败，状态码: ' + response.status);
-                }
-            } catch (error) {
-                console.error(`从后端加载统计数据失败 (尝试 ${attempt + 1}/${maxAttempts}):`, error);
-                
-                // 如果还有重试次数，延迟后重试
-                if (attempt < maxAttempts - 1) {
-                    const delay = Math.pow(2, attempt) * 1000; // 指数退避
-                    console.log(`将在 ${delay}ms 后重试...`);
-                    setTimeout(() => loadStats(attempt + 1, maxAttempts), delay);
-                    return;
-                }
-                
-                // 如果所有重试都失败，使用默认值
-                console.log('所有重试都失败，使用默认统计值');
-                stats = {
-                    totalUses: 0,
-                    totalUsers: 0
-                };
-            }
-            
-            updateStatsDisplay();
-        }
-        
-        // 更新统计数据显示
-        function updateStatsDisplay() {
-            totalUses.textContent = stats.totalUses;
-            uniqueUsers.textContent = stats.totalUsers;
-        }
-        
-        // 增加使用次数（调用后端API） - 增加重试机制
-        async function incrementUsage(attempt = 0, maxAttempts = 3) {
-            try {
-                const response = await fetch('http://localhost:3000/api/update-stats', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ userId })
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success) {
-                        // 更新本地统计数据
-                        stats.totalUses = data.data.totalUses || 0;
-                        stats.totalUsers = data.data.totalUsers || 0;
-                        console.log('成功更新统计数据:', stats);
-                        updateStatsDisplay();
-                    } else {
-                        throw new Error('API返回错误: ' + (data.message || '未知错误'));
-                    }
-                } else {
-                    throw new Error('API请求失败，状态码: ' + response.status);
-                }
-            } catch (error) {
-                console.error(`更新统计数据到后端失败 (尝试 ${attempt + 1}/${maxAttempts}):`, error);
-                
-                // 如果还有重试次数，延迟后重试
-                if (attempt < maxAttempts - 1) {
-                    const delay = Math.pow(2, attempt) * 1000; // 指数退避
-                    console.log(`将在 ${delay}ms 后重试...`);
-                    setTimeout(() => incrementUsage(attempt + 1, maxAttempts), delay);
-                    return;
-                }
-                
-                // 如果所有重试都失败，记录错误并继续执行（不影响摇签功能）
-                console.error('所有重试都失败，统计数据更新失败');
-            }
-        }
         
         // 模拟签文数据（简化版，只包含前3签）
         const signData = {
@@ -392,8 +213,7 @@
             interpretation.innerHTML = '';
             interpretBtn.disabled = true;
             
-            // 增加使用次数
-            incrementUsage();
+
             
             // 模拟摇签过程
             await new Promise(resolve => setTimeout(resolve, 1500));
@@ -444,8 +264,6 @@
         // 初始化页面
         function init() {
             signResult.textContent = "点击'摇签'按钮开始";
-            // 加载统计数据
-            loadStats();
         }
         
         init();
