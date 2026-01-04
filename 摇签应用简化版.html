@@ -269,8 +269,8 @@
             localStorage.setItem('shakeSignUserId', userId);
         }
         
-        // 从后端API加载统计数据
-        async function loadStats() {
+        // 从后端API加载统计数据 - 增加重试机制
+        async function loadStats(attempt = 0, maxAttempts = 3) {
             try {
                 const response = await fetch('http://localhost:3000/api/get-stats');
                 if (response.ok) {
@@ -278,11 +278,24 @@
                     if (data.success) {
                         stats.totalUses = data.data.totalUses || 0;
                         stats.totalUsers = data.data.totalUsers || 0;
+                        console.log('成功加载统计数据:', stats);
                     }
+                } else {
+                    throw new Error('API请求失败，状态码: ' + response.status);
                 }
             } catch (error) {
-                console.error('从后端加载统计数据失败:', error);
-                // 如果API调用失败，使用默认值
+                console.error(`从后端加载统计数据失败 (尝试 ${attempt + 1}/${maxAttempts}):`, error);
+                
+                // 如果还有重试次数，延迟后重试
+                if (attempt < maxAttempts - 1) {
+                    const delay = Math.pow(2, attempt) * 1000; // 指数退避
+                    console.log(`将在 ${delay}ms 后重试...`);
+                    setTimeout(() => loadStats(attempt + 1, maxAttempts), delay);
+                    return;
+                }
+                
+                // 如果所有重试都失败，使用默认值
+                console.log('所有重试都失败，使用默认统计值');
                 stats = {
                     totalUses: 0,
                     totalUsers: 0
@@ -298,8 +311,8 @@
             uniqueUsers.textContent = stats.totalUsers;
         }
         
-        // 增加使用次数（调用后端API）
-        async function incrementUsage() {
+        // 增加使用次数（调用后端API） - 增加重试机制
+        async function incrementUsage(attempt = 0, maxAttempts = 3) {
             try {
                 const response = await fetch('http://localhost:3000/api/update-stats', {
                     method: 'POST',
@@ -315,11 +328,27 @@
                         // 更新本地统计数据
                         stats.totalUses = data.data.totalUses || 0;
                         stats.totalUsers = data.data.totalUsers || 0;
+                        console.log('成功更新统计数据:', stats);
                         updateStatsDisplay();
+                    } else {
+                        throw new Error('API返回错误: ' + (data.message || '未知错误'));
                     }
+                } else {
+                    throw new Error('API请求失败，状态码: ' + response.status);
                 }
             } catch (error) {
-                console.error('更新统计数据到后端失败:', error);
+                console.error(`更新统计数据到后端失败 (尝试 ${attempt + 1}/${maxAttempts}):`, error);
+                
+                // 如果还有重试次数，延迟后重试
+                if (attempt < maxAttempts - 1) {
+                    const delay = Math.pow(2, attempt) * 1000; // 指数退避
+                    console.log(`将在 ${delay}ms 后重试...`);
+                    setTimeout(() => incrementUsage(attempt + 1, maxAttempts), delay);
+                    return;
+                }
+                
+                // 如果所有重试都失败，记录错误并继续执行（不影响摇签功能）
+                console.error('所有重试都失败，统计数据更新失败');
             }
         }
         
