@@ -1,0 +1,105 @@
+// 吕祖灵签摇签应用 JavaScript 代码
+
+// DOM 元素
+const shakeBtn = document.getElementById('shake-btn');
+const interpretBtn = document.getElementById('interpret-btn');
+const signResult = document.getElementById('sign-result');
+const interpretation = document.getElementById('interpretation');
+
+// 当前摇出的签号
+let currentSignNumber = null;
+let currentSignData = null;
+
+// 模拟签文数据
+const signData = {
+    1: {
+        title: "古人王母祝寿",
+        signText: "蓬莱东阁玉桃香，顺水行舟仙赐方；\n宜男正好图全计，不必他方卜地长。",
+        explanation: "王母娘娘大寿，各仙家前往致贺，场面极爲浩大。王母对贺客皆赐以仙桃仙丹等长生不老的美食。衆仙大会，乐韵钧天，属吉庆徵兆。",
+        details: "谋望：不要急于成事，须待时机。\n钱财：委託异性去处理，收穫较易较佳。\n婚姻：虽吉，但仍要守候。\n自身：修善即可平安。\n家宅：家宅平安，逐渐昌盛。\n开业：与朋友合资易有所成。\n迁居：选吉方即可。\n出行：往远方，有意外之喜。\n疾病：一切小病痛都能痊愈。\n六甲：顺产，生男孩。\n行人：音信将至。\n诉讼：双方可得和解。",
+        anotherText: "占得鳌头百事成，逢迎到处不须疑；\n从兹修省能方便，福禄绵绵自可期。",
+        interpretation: "在运势尚未通达的时候，当然是有志难伸，一旦鳌头独佔。跟红顶白、锦上添花的人会接踵而来，如果一下子利欲薰心，很容易把大好前程新自断送。这段时候最 好是自我签讨，保持稳健踏实的态度，才能够使到福禄绵绵不绝。"
+    },
+    2: {
+        title: "古人潜龙变化",
+        signText: "潜藏自有光明日，守耐无如待丙丁；\n龙虎相翻生定数，春风一转渐飞腾。",
+        explanation: "古人以龙喻示人的际遇，潜龙即隐藏中的龙，为什麽要隐藏，因为时运不际，未得其位，所以潜藏以待，一旦风云际会，即可飞龙在天，利见大人了。",
+        details: "谋望：暂仍未至时机，等待亦可。\n钱财：委托他人协助，财可有成。\n婚姻：双方仍在考虑中，再等待一段时日更好。\n自身：谨慎守己，可以无碍。\n家宅：安份守已则家宅平安。\n开业：初段宜守，应有小利。\n迁居：选吉方则可。\n出行：不宜远行，可在近処走动。\n疾病：病因未明，千万小心，慢慢调养，会痊愈。\n六甲：宜先调身，饮食品亦要注意。\n行人：现在未动，要问甚麽时候来，就要看丙丁日。\n诉讼：一时难以解决，需要等待。",
+        anotherText: "贵人相逢更可期，庭前枯木凤来仪；\n好将短事从长事，休听旁人说是非。",
+        interpretation: "换了一个新环境，一切都感到很陌生，周围的人也不认识，所以暂时应该低凋，少说多做，先静观其变，再决定行动。"
+    },
+    3: {
+        title: "古人唐明王游月殿",
+        signText: "明月当三五，天地自无私；\n一阳来已复，得意在秋时。",
+        explanation: "此签有『无私奉献』之意。提醒当事人，不要计较一己之得失。",
+        details: "谋望：不必强求，随遇而安。\n钱财：财如流水，不必执着。\n婚姻：有缘千里来相会，无缘对面不相逢。\n自身：修心养性，自然平安。\n家宅：家和万事兴。\n开业：时机未到，不宜急进。\n迁居：顺其自然。\n出行：平安顺利。\n疾病：自然痊愈。\n六甲：顺产。\n行人：平安归来。\n诉讼：和解为上。",
+        anotherText: "月到天心人有望，牛郎巧合属天成；\n不须辗转求良偶，天喜从人命自荣。",
+        interpretation: "当面临抉择的时候，应该考虑到整体的利益，不要只看到眼前的好处。有时候，牺牲小我，完成大我，反而能够得到更大的回报。"
+    }
+};
+
+// 摇签按钮点击事件
+shakeBtn.addEventListener('click', async () => {
+    // 禁用摇签按钮，显示加载状态
+    shakeBtn.disabled = true;
+    shakeBtn.textContent = '摇签中...';
+    signResult.textContent = '正在摇签...';
+    
+    // 隐藏解释
+    interpretation.style.display = 'none';
+    interpretation.innerHTML = '';
+    interpretBtn.disabled = true;
+    
+    // 模拟摇签过程
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // 生成随机签号（1-3）
+    currentSignNumber = Math.floor(Math.random() * 3) + 1;
+    
+    try {
+        // 获取签文数据
+        currentSignData = signData[currentSignNumber];
+        
+        // 显示签文
+        signResult.innerHTML = `第${currentSignNumber}签：${currentSignData.title}\n\n${currentSignData.signText}`;
+        
+        // 启用解签按钮
+        interpretBtn.disabled = false;
+        
+    } catch (error) {
+        console.error('摇签失败：', error);
+        signResult.textContent = '摇签失败，请重试';
+    } finally {
+        // 恢复摇签按钮
+        shakeBtn.disabled = false;
+        shakeBtn.textContent = '摇签';
+    }
+});
+
+// 解签按钮点击事件
+interpretBtn.addEventListener('click', () => {
+    if (currentSignData) {
+        // 显示解释
+        interpretation.style.display = 'block';
+        interpretation.innerHTML = `
+            <h3>解签</h3>
+            <p><strong>签文：</strong>${currentSignData.signText.replace(/\n/g, '<br>')}</p>
+            <p><strong>解曰：</strong>${currentSignData.explanation.replace(/\n/g, '<br>')}</p>
+            <p><strong>详解：</strong>${currentSignData.details.replace(/\n/g, '<br>')}</p>
+            ${currentSignData.anotherText ? `<p><strong>又曰：</strong>${currentSignData.anotherText.replace(/\n/g, '<br>')}</p>` : ''}
+            ${currentSignData.interpretation ? `<p><strong>释义：</strong>${currentSignData.interpretation.replace(/\n/g, '<br>')}</p>` : ''}
+        `;
+    }
+});
+
+
+
+// 初始化页面
+function init() {
+    signResult.textContent = "诚心默念所问之事";
+    signResult.style.color = "#8b4513";
+    signResult.style.fontSize = "1.1rem";
+    signResult.style.fontStyle = "italic";
+    signResult.style.textShadow = "1px 1px 1px rgba(0, 0, 0, 0.1)";
+}
+init();
