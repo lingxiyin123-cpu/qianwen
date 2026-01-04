@@ -5,6 +5,80 @@ const shakeBtn = document.getElementById('shake-btn');
 const interpretBtn = document.getElementById('interpret-btn');
 const signResult = document.getElementById('sign-result');
 const interpretation = document.getElementById('interpretation');
+// 统计相关DOM元素
+const totalUses = document.getElementById('totalUses');
+const uniqueUsers = document.getElementById('uniqueUsers');
+
+// 统计数据
+let stats = {
+    totalUses: 0,
+    uniqueUsers: 0,
+    userIds: new Set()
+};
+
+// 用户ID生成与存储
+let userId = localStorage.getItem('shakeSignUserId');
+if (!userId) {
+    userId = 'user_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+    localStorage.setItem('shakeSignUserId', userId);
+}
+
+// 从localStorage加载统计数据
+function loadStats() {
+    const savedStats = localStorage.getItem('shakeSignStats');
+    if (savedStats) {
+        try {
+            const parsedStats = JSON.parse(savedStats);
+            stats.totalUses = parsedStats.totalUses || 0;
+            stats.uniqueUsers = parsedStats.uniqueUsers || 0;
+            stats.userIds = new Set(parsedStats.userIds || []);
+        } catch (error) {
+            console.error('加载统计数据失败:', error);
+            // 如果加载失败，使用默认值
+            stats = {
+                totalUses: 0,
+                uniqueUsers: 0,
+                userIds: new Set()
+            };
+        }
+    }
+    
+    // 添加当前用户ID到集合中
+    if (!stats.userIds.has(userId)) {
+        stats.userIds.add(userId);
+        stats.uniqueUsers++;
+        saveStats();
+    }
+    
+    updateStatsDisplay();
+}
+
+// 保存统计数据到localStorage
+function saveStats() {
+    const statsToSave = {
+        totalUses: stats.totalUses,
+        uniqueUsers: stats.userIds.size,
+        userIds: Array.from(stats.userIds)
+    };
+    localStorage.setItem('shakeSignStats', JSON.stringify(statsToSave));
+}
+
+// 更新统计数据显示
+function updateStatsDisplay() {
+    if (totalUses) {
+        totalUses.textContent = stats.totalUses;
+    }
+    if (uniqueUsers) {
+        uniqueUsers.textContent = stats.userIds.size;
+    }
+}
+
+// 增加使用次数
+function incrementUsage() {
+    stats.totalUses++;
+    saveStats();
+    updateStatsDisplay();
+}
 
 // 当前摇出的签号
 let currentSignNumber = null;
@@ -211,6 +285,9 @@ shakeBtn.addEventListener('click', async () => {
         // 启用解签按钮
         interpretBtn.disabled = false;
         
+        // 增加使用次数
+        incrementUsage();
+        
     } catch (error) {
         console.error('摇签失败：', error);
         signResult.textContent = '摇签失败，请重试';
@@ -246,5 +323,8 @@ function init() {
     signResult.style.fontSize = "1.1rem";
     signResult.style.fontStyle = "italic";
     signResult.style.textShadow = "1px 1px 1px rgba(0, 0, 0, 0.1)";
+    
+    // 加载统计数据
+    loadStats();
 }
 init();

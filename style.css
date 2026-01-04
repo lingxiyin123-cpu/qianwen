@@ -120,6 +120,45 @@ h1 {
     text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
 }
 
+.statistics {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #d4c8b0;
+}
+
+.statistics h3 {
+    color: #8b4513;
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+}
+
+.stats-container {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    flex-wrap: wrap;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 10px 20px;
+    background-color: #f5f1e6;
+    border-radius: 8px;
+    border: 1px solid #d4c8b0;
+}
+
+.stat-label {
+    font-size: 1rem;
+    color: #333;
+    margin-right: 5px;
+}
+
+.stat-value {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: #8b4513;
+}
+
 @media (max-width: 480px) {
     .container {
         padding: 20px;
