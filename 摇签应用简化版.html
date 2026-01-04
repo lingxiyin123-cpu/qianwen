@@ -216,8 +216,12 @@
             // 模拟摇签过程
             await new Promise(resolve => setTimeout(resolve, 1500));
             
-            // 生成随机签号（1-3）
-            currentSignNumber = Math.floor(Math.random() * 3) + 1;
+            // 生成随机签号（从1-100中随机选择，确保每个签号有平等的出现概率）
+            let randomSignNumber;
+            do {
+                randomSignNumber = Math.floor(Math.random() * 100) + 1;
+            } while (!signData[randomSignNumber]);
+            currentSignNumber = randomSignNumber;
             
             try {
                 // 获取签文数据
