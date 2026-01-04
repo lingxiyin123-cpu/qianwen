@@ -214,6 +214,9 @@
                     <span id="uniqueUsers" class="stat-value">0</span>
                 </div>
             </div>
+            <div class="statistics-note" style="font-size: 0.9rem; color: #666; margin-top: 10px;">
+                <small>注：统计数据仅记录当前浏览器/设备的使用情况，不同设备/浏览器独立计数。</small>
+            </div>
         </div>
     </div>
     
@@ -233,15 +236,36 @@
         // 统计数据
         let stats = {
             totalUses: 0,
-            uniqueUsers: 0,
             userIds: new Set()
         };
         
+        // 生成简单的浏览器指纹
+        function generateBrowserFingerprint() {
+            const fingerprint = [
+                navigator.userAgent,
+                navigator.language,
+                navigator.platform,
+                screen.width + 'x' + screen.height,
+                new Date().getTimezoneOffset(),
+                navigator.cookieEnabled
+            ].join('|');
+            
+            // 简单的哈希函数
+            let hash = 0;
+            for (let i = 0; i < fingerprint.length; i++) {
+                const char = fingerprint.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32bit integer
+            }
+            return Math.abs(hash).toString(16);
+        }
+
         // 获取或生成用户ID
         let userId = localStorage.getItem('shakeSignUserId');
         if (!userId) {
-            // 生成唯一用户ID
-            userId = 'user_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+            // 生成更唯一的用户ID：时间戳 + 浏览器指纹 + 随机数
+            const fingerprint = generateBrowserFingerprint();
+            userId = 'user_' + Date.now() + '_' + fingerprint + '_' + Math.floor(Math.random() * 1000);
             localStorage.setItem('shakeSignUserId', userId);
         }
         
@@ -252,7 +276,6 @@
                 try {
                     const parsedStats = JSON.parse(savedStats);
                     stats.totalUses = parsedStats.totalUses || 0;
-                    stats.uniqueUsers = parsedStats.uniqueUsers || 0;
                     stats.userIds = new Set(parsedStats.userIds || []);
                 } catch (e) {
                     console.error('加载统计数据失败:', e);
@@ -262,7 +285,6 @@
             // 检查当前用户是否已存在
             if (!stats.userIds.has(userId)) {
                 stats.userIds.add(userId);
-                stats.uniqueUsers++;
                 saveStats();
             }
             
@@ -273,7 +295,6 @@
         function saveStats() {
             const statsToSave = {
                 totalUses: stats.totalUses,
-                uniqueUsers: stats.uniqueUsers,
                 userIds: Array.from(stats.userIds)
             };
             localStorage.setItem('shakeSignStats', JSON.stringify(statsToSave));
@@ -282,7 +303,7 @@
         // 更新统计数据显示
         function updateStatsDisplay() {
             totalUses.textContent = stats.totalUses;
-            uniqueUsers.textContent = stats.uniqueUsers;
+            uniqueUsers.textContent = stats.userIds.size;
         }
         
         // 增加使用次数

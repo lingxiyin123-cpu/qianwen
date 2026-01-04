@@ -12,14 +12,36 @@ const uniqueUsers = document.getElementById('uniqueUsers');
 // 统计数据
 let stats = {
     totalUses: 0,
-    uniqueUsers: 0,
     userIds: new Set()
 };
+
+// 生成简单的浏览器指纹
+function generateBrowserFingerprint() {
+    const fingerprint = [
+        navigator.userAgent,
+        navigator.language,
+        navigator.platform,
+        screen.width + 'x' + screen.height,
+        new Date().getTimezoneOffset(),
+        navigator.cookieEnabled
+    ].join('|');
+    
+    // 简单的哈希函数
+    let hash = 0;
+    for (let i = 0; i < fingerprint.length; i++) {
+        const char = fingerprint.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash).toString(16);
+}
 
 // 用户ID生成与存储
 let userId = localStorage.getItem('shakeSignUserId');
 if (!userId) {
-    userId = 'user_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+    // 生成更唯一的用户ID：时间戳 + 浏览器指纹 + 随机数
+    const fingerprint = generateBrowserFingerprint();
+    userId = 'user_' + Date.now() + '_' + fingerprint + '_' + Math.floor(Math.random() * 1000);
     localStorage.setItem('shakeSignUserId', userId);
 }
 
@@ -30,14 +52,12 @@ function loadStats() {
         try {
             const parsedStats = JSON.parse(savedStats);
             stats.totalUses = parsedStats.totalUses || 0;
-            stats.uniqueUsers = parsedStats.uniqueUsers || 0;
             stats.userIds = new Set(parsedStats.userIds || []);
         } catch (error) {
             console.error('加载统计数据失败:', error);
             // 如果加载失败，使用默认值
             stats = {
                 totalUses: 0,
-                uniqueUsers: 0,
                 userIds: new Set()
             };
         }
@@ -46,7 +66,6 @@ function loadStats() {
     // 添加当前用户ID到集合中
     if (!stats.userIds.has(userId)) {
         stats.userIds.add(userId);
-        stats.uniqueUsers++;
         saveStats();
     }
     
@@ -57,7 +76,6 @@ function loadStats() {
 function saveStats() {
     const statsToSave = {
         totalUses: stats.totalUses,
-        uniqueUsers: stats.userIds.size,
         userIds: Array.from(stats.userIds)
     };
     localStorage.setItem('shakeSignStats', JSON.stringify(statsToSave));
