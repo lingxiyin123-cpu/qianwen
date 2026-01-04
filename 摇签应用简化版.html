@@ -215,7 +215,7 @@
                 </div>
             </div>
             <div class="statistics-note" style="font-size: 0.9rem; color: #666; margin-top: 10px;">
-                <small>注：统计数据仅记录当前浏览器/设备的使用情况，不同设备/浏览器独立计数。</small>
+                <small>注：统计数据记录所有设备的使用情况，显示全局总使用次数和总用户数。</small>
             </div>
         </div>
     </div>
@@ -236,7 +236,7 @@
         // 统计数据
         let stats = {
             totalUses: 0,
-            userIds: new Set()
+            totalUsers: 0
         };
         
         // 生成简单的浏览器指纹
@@ -269,48 +269,58 @@
             localStorage.setItem('shakeSignUserId', userId);
         }
         
-        // 加载统计数据
-        function loadStats() {
-            const savedStats = localStorage.getItem('shakeSignStats');
-            if (savedStats) {
-                try {
-                    const parsedStats = JSON.parse(savedStats);
-                    stats.totalUses = parsedStats.totalUses || 0;
-                    stats.userIds = new Set(parsedStats.userIds || []);
-                } catch (e) {
-                    console.error('加载统计数据失败:', e);
+        // 从后端API加载统计数据
+        async function loadStats() {
+            try {
+                const response = await fetch('http://localhost:3000/api/get-stats');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        stats.totalUses = data.data.totalUses || 0;
+                        stats.totalUsers = data.data.totalUsers || 0;
+                    }
                 }
-            }
-            
-            // 检查当前用户是否已存在
-            if (!stats.userIds.has(userId)) {
-                stats.userIds.add(userId);
-                saveStats();
+            } catch (error) {
+                console.error('从后端加载统计数据失败:', error);
+                // 如果API调用失败，使用默认值
+                stats = {
+                    totalUses: 0,
+                    totalUsers: 0
+                };
             }
             
             updateStatsDisplay();
-        }
-        
-        // 保存统计数据
-        function saveStats() {
-            const statsToSave = {
-                totalUses: stats.totalUses,
-                userIds: Array.from(stats.userIds)
-            };
-            localStorage.setItem('shakeSignStats', JSON.stringify(statsToSave));
         }
         
         // 更新统计数据显示
         function updateStatsDisplay() {
             totalUses.textContent = stats.totalUses;
-            uniqueUsers.textContent = stats.userIds.size;
+            uniqueUsers.textContent = stats.totalUsers;
         }
         
-        // 增加使用次数
-        function incrementUsage() {
-            stats.totalUses++;
-            saveStats();
-            updateStatsDisplay();
+        // 增加使用次数（调用后端API）
+        async function incrementUsage() {
+            try {
+                const response = await fetch('http://localhost:3000/api/update-stats', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ userId })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        // 更新本地统计数据
+                        stats.totalUses = data.data.totalUses || 0;
+                        stats.totalUsers = data.data.totalUsers || 0;
+                        updateStatsDisplay();
+                    }
+                }
+            } catch (error) {
+                console.error('更新统计数据到后端失败:', error);
+            }
         }
         
         // 模拟签文数据（简化版，只包含前3签）

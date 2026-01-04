@@ -12,7 +12,7 @@ const uniqueUsers = document.getElementById('uniqueUsers');
 // 统计数据
 let stats = {
     totalUses: 0,
-    userIds: new Set()
+    totalUsers: 0
 };
 
 // 生成简单的浏览器指纹
@@ -45,40 +45,27 @@ if (!userId) {
     localStorage.setItem('shakeSignUserId', userId);
 }
 
-// 从localStorage加载统计数据
-function loadStats() {
-    const savedStats = localStorage.getItem('shakeSignStats');
-    if (savedStats) {
-        try {
-            const parsedStats = JSON.parse(savedStats);
-            stats.totalUses = parsedStats.totalUses || 0;
-            stats.userIds = new Set(parsedStats.userIds || []);
-        } catch (error) {
-            console.error('加载统计数据失败:', error);
-            // 如果加载失败，使用默认值
-            stats = {
-                totalUses: 0,
-                userIds: new Set()
-            };
+// 从后端API加载统计数据
+async function loadStats() {
+    try {
+        const response = await fetch('http://localhost:3000/api/get-stats');
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                stats.totalUses = data.data.totalUses || 0;
+                stats.totalUsers = data.data.totalUsers || 0;
+            }
         }
-    }
-    
-    // 添加当前用户ID到集合中
-    if (!stats.userIds.has(userId)) {
-        stats.userIds.add(userId);
-        saveStats();
+    } catch (error) {
+        console.error('从后端加载统计数据失败:', error);
+        // 如果API调用失败，使用默认值
+        stats = {
+            totalUses: 0,
+            totalUsers: 0
+        };
     }
     
     updateStatsDisplay();
-}
-
-// 保存统计数据到localStorage
-function saveStats() {
-    const statsToSave = {
-        totalUses: stats.totalUses,
-        userIds: Array.from(stats.userIds)
-    };
-    localStorage.setItem('shakeSignStats', JSON.stringify(statsToSave));
 }
 
 // 更新统计数据显示
@@ -87,15 +74,33 @@ function updateStatsDisplay() {
         totalUses.textContent = stats.totalUses;
     }
     if (uniqueUsers) {
-        uniqueUsers.textContent = stats.userIds.size;
+        uniqueUsers.textContent = stats.totalUsers;
     }
 }
 
-// 增加使用次数
-function incrementUsage() {
-    stats.totalUses++;
-    saveStats();
-    updateStatsDisplay();
+// 增加使用次数（调用后端API）
+async function incrementUsage() {
+    try {
+        const response = await fetch('http://localhost:3000/api/update-stats', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ userId })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                // 更新本地统计数据
+                stats.totalUses = data.data.totalUses || 0;
+                stats.totalUsers = data.data.totalUsers || 0;
+                updateStatsDisplay();
+            }
+        }
+    } catch (error) {
+        console.error('更新统计数据到后端失败:', error);
+    }
 }
 
 // 当前摇出的签号
